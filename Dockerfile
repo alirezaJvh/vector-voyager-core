@@ -29,6 +29,9 @@ RUN apt-get update && apt-get install -y \
     # for CairoSVG
     libcairo2 \
     # other
+    # build-essential \
+    # python3-dev \
+    # libsqlite3-dev \
     gcc \
     && rm -rf /var/lib/apt/lists/*
 

@@ -19,3 +19,9 @@ services:
           path: requirements.txt
         - action: rebuild
           path: compose.yaml
+  redis:
+    image: redis:alpine
+    env_file:
+      - .env
+    ports:
+      - '6379:6379'

@@ -1,5 +1,6 @@
 from fastapi import APIRouter, UploadFile, File
 from .schemas import CSVFileValidator
+from db.vector_db import get_embedding
 router = APIRouter()
 
 # upload csv file to save it in vector database
@@ -25,7 +26,7 @@ async def upload_csv(file: UploadFile = File(...), required_header: str = None):
 def query():
     return {"status": "query endpoint"}
 
-@router.get('llm')
+@router.get('/llm')
 def llm():
     return {"status": "llm endpoint"}
 
