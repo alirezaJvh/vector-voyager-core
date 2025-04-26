@@ -19,20 +19,33 @@ async def upload_csv(file: UploadFile = File(...), review_header: str = None, pr
         required_header=[review_header, product_id_header]
     )
     
-    print('@@@@@ data @@@@')
-    print(data)
+    reviews = []
+    product_ids = []
+    for row in data:
+        review = row.get(review_header, "").strip()
+        product_id = row.get(product_id_header, "").strip()
+        if review and product_id:
+            reviews.append(review)
+            product_ids.append(product_id)
 
-    # Extract column data
-    # data = [row[review_header] for row in data_dict 
-    #         if review_header in row and row[review_header]]
+    batch_size = 200
+    total_processed = 0
 
-    # print('@@@@@@@@ data @@@@@@@@@')
-    # print(len(csv_reader))
-    # print('@@@@@@@@ file_size @@@@@@@@@')
-    # print(file_size)
+    for idx in range(0, len(reviews), batch_size):
+        batch_reviews = reviews[idx:idx + batch_size]
+        batch_product_ids = product_ids[idx:idx + batch_size]
 
-    # print(text)
-    return {"status": "success"}
+        # add embedding to vector database
+        print(f"Processing batch {idx} of {len(reviews)}")
+        indices = await vector_db.add_embedding_batch(batch_reviews, batch_product_ids)
+        total_processed += len(indices)
+
+    return {
+        "status": "success", 
+        "message": f"{total_processed} reviews processed", 
+        "total_reviews": total_processed, 
+        "file_size": file_size
+    }
     
 
 # get query(text), create vector embeding from it then do similiarity search and return the results
