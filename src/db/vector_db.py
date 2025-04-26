@@ -100,7 +100,21 @@ class VectorDBClient:
         
         return index_positions
 
+    async def search(self, text: str, top_k: int = 2):
+        query_embedding = self.get_embedding(text)
 
+        query_embedding = query_embedding.reshape(1, -1)
+
+        index = self.get_client()
+        distances, indices = index.search(query_embedding, k=top_k)
+        results = []
+        return distances, indices
+    
+    def total_embedding(self) -> int:
+        index = self.get_client()
+        return index.ntotal
+
+        
 
         
     

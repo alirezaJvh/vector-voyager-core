@@ -1,6 +1,7 @@
 from fastapi import APIRouter, UploadFile, File
 from common.validation import CSVFileValidator
 from db.vector_db import VectorDBClient
+from .schemas import QuerySchema
 
 vector_db = VectorDBClient()
 router = APIRouter()
@@ -18,7 +19,7 @@ async def upload_csv(file: UploadFile = File(...), review_header: str = None, pr
         file=file,
         required_header=[review_header, product_id_header]
     )
-    
+
     reviews = []
     product_ids = []
     for row in data:
@@ -36,7 +37,6 @@ async def upload_csv(file: UploadFile = File(...), review_header: str = None, pr
         batch_product_ids = product_ids[idx:idx + batch_size]
 
         # add embedding to vector database
-        print(f"Processing batch {idx} of {len(reviews)}")
         indices = await vector_db.add_embedding_batch(batch_reviews, batch_product_ids)
         total_processed += len(indices)
 
@@ -48,10 +48,17 @@ async def upload_csv(file: UploadFile = File(...), review_header: str = None, pr
     }
     
 
-# get query(text), create vector embeding from it then do similiarity search and return the results
-@router.get("/query")
-def query():
-    return {"status": "query endpoint"}
+
+@router.post("/query")
+async def query(payload: QuerySchema):
+
+    query, top_k = payload.query, payload.top_k
+    if not query:
+        raise HTTPException(status_code=400, detail="Query text is required")
+
+    distances, indices = await vector_db.search(query, top_k)
+
+    return {"status": "query endpoint", "text": query, "top_k": top_k, "distances": distances,}
 
 @router.get('/llm')
 def llm():
