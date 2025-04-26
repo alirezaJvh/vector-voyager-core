@@ -4,21 +4,30 @@ from .config import OPENAI_API_KEY
 import numpy as np
 
 
-if OPENAI_API_KEY == "":
-    raise NotImplementedError("OpenAI API key is not set")
 
-client = OpenAI()
+class VectorDBClient:
+    def __init__(self, embedding_dim: int = 1536):
+        if OPENAI_API_KEY == "":
+            raise NotImplementedError("OpenAI API key is not set")
+        self._client = None
+        self._embedding_dim = embedding_dim
+        self._openai_client = OpenAI()
 
-def get_embedding(text: str):
-    response = client.embeddings.create(
-        input=text,
-        model="text-embedding-3-small"
-    )
-    embedding = np.array(response.data[0].embedding).astype('float32')
-    return embedding
+    def init_client(self):
+        if not self._client:
+            self._client = faiss.IndexFlatIP(self._embedding_dim)
+                
+    def get_client(self):
+        if not self._client:
+            self.init_client()
+        return self._client
 
-
-def create_vector_db():
-    embedding_dim = 1536
-    index = faiss.IndexFlatIP(embedding_dim)
-    return index
+    def get_embedding(self, text: str):
+        response = self._openai_client.embeddings.create(
+            input=text,
+            model="text-embedding-3-small"
+        )
+        embedding = np.array(response.data[0].embedding).astype('float32')
+        return embedding
+        
+    
