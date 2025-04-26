@@ -7,19 +7,16 @@ router = APIRouter()
 @router.post("/upload/{required_header}")
 async def upload_csv(file: UploadFile = File(...), required_header: str = None):
     # Validate the CSV file using our Pydantic validator
-    validation_result = await CSVFileValidator.validate_csv_file(
+    _, data, file_size = await CSVFileValidator.validate_csv_file(
         file=file,
         required_header=required_header,
     )
-    print('@@@@@@@@ validation_result @@@@@@@@@')
-    print(validation_result)
+    print('@@@@@@@@ data @@@@@@@@@')
+    print(data)
+    print('@@@@@@@@ file_size @@@@@@@@@')
+    print(file_size)
     return {"status": "success"}
-    # return {
-    #     "status": "success",
-    #     "file": file.filename,
-    #     "headers": headers,
-    #     "size": validation_result["file_size"]
-    # }
+    
 
 # get query(text), create vector embeding from it then do similiarity search and return the results
 @router.get("/query")

@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from fastapi import UploadFile, File, HTTPException
 import csv
+import numpy as np
 from io import StringIO
 
 
@@ -19,9 +20,19 @@ class CSVFileValidator:
         # Validate CSV structure
         try:
             text_content = contents.decode('utf-8')
-            csv_reader = csv.reader(StringIO(text_content))
-            # Get the headers
+            csv_file = StringIO(text_content)
+            csv_reader = csv.reader(csv_file)
+            csv_to_dict = csv.DictReader(csv_file)
             headers = next(csv_reader, None)  
+            # print(csv_reader)
+            # # Get the headers
+            # print('####### here #########')
+            # print(csv_file)
+            # # header = csv_file.readline().strip().split(",")
+            # data = np.genfromtxt(csv_file, delimiter=',', dtype=None, names=True)
+            # # print("Header:", header)
+            # print("Data:", data)
+            # headers = next(csv_reader, None)  
             
             if not headers:
                 # Reset file pointer
@@ -38,11 +49,7 @@ class CSVFileValidator:
             
             # Reset file pointer for further processing
             await file.seek(0)
-            return {
-                "headers": headers,
-                "content": '\n'.join(text_content.splitlines()[1:]),
-                "file_size": file_size
-            }
+            return headers, csv_to_dict, file_size
             
         except UnicodeDecodeError:
             await file.seek(0)  # Reset file pointer

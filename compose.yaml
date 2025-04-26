@@ -11,6 +11,8 @@ services:
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
     volumes:
       - ./src:/code:rw
+    depends_on:
+      - redis
     develop:
       watch:
         - action: rebuild
@@ -21,7 +23,6 @@ services:
           path: compose.yaml
   redis:
     image: redis:alpine
-    env_file:
-      - .env
     ports:
       - '6379:6379'
+    command: ['redis-server']
