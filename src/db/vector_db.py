@@ -2,6 +2,8 @@ import faiss
 from openai import OpenAI
 from .config import OPENAI_API_KEY
 import numpy as np
+import json
+from .redis import RedisClient
 
 
 
@@ -24,7 +26,7 @@ class VectorDBClient:
         redis = await self._redis_client.get_client()
         return redis
 
-    async def _get_next_index(self):
+    async def _get_next_index(self) -> int:
         """Get the next available index position"""
         redis = await self._get_redis()
         counter = await redis.incr(self._index_counter_key)
@@ -37,14 +39,14 @@ class VectorDBClient:
 
         string_metadata = {k: json.dumps(v) if not isinstance(v, str) else v
                             for k, v in metadata.items()}
-        await redis.hset(key, string_metadata)
+        await redis.hset(key, mapping=string_metadata)
                 
     def get_client(self):
         if not self._client:
             self.init_client()
         return self._client
 
-    def get_embedding(self, text: str):
+    def get_embedding(self, text: str) -> list[float]:
         response = self._openai_client.embeddings.create(
             input=text,
             model="text-embedding-3-small"
@@ -52,7 +54,7 @@ class VectorDBClient:
         embedding = np.array(response.data[0].embedding).astype('float32')
         return embedding
 
-    async def add_embedding(self, text: str, product_id: str):
+    async def add_embedding(self, text: str, product_id: str) -> int:
         embedding = self.get_embedding(text)
         # Reshape for FAISS (expects 2D array)
         embedding_reshaped = embedding.reshape(1, -1)
@@ -69,7 +71,7 @@ class VectorDBClient:
 
         return index_position
 
-    async def add_embedding_batch(self, texts: list[str], product_ids: list[str]):
+    async def add_embedding_batch(self, texts: list[str], product_ids: list[str]) -> list[int]:
         if len(texts) != len(product_ids):
             raise ValueError("texts and product_ids must have the same length")
 
@@ -86,16 +88,17 @@ class VectorDBClient:
 
         for index, (text, product_id) in enumerate(zip(texts, product_ids)):
             index_position = start_index + index
+
             await self._save_metadata(index_position, {
                 'product_id': product_id,
                 'review_text': text
             })
             index_positions.append(index_position)
 
-        await self._get_redis().incrby(self._index_counter_key, len(texts))
+        redis = await self._get_redis()
+        await redis.incrby(self._index_counter_key, len(texts))
         
         return index_positions
-
 
 
 
