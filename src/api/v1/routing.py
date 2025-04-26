@@ -20,6 +20,9 @@ async def upload_csv(file: UploadFile = File(...), review_header: str = None, pr
         required_header=[review_header, product_id_header]
     )
 
+    # remove all existing embeddings
+    await vector_db.remove_all()
+
     reviews = []
     product_ids = []
     for row in data:
@@ -56,9 +59,15 @@ async def query(payload: QuerySchema):
     if not query:
         raise HTTPException(status_code=400, detail="Query text is required")
 
-    distances, indices = await vector_db.search(query, top_k)
+    distances, indices, metadata = await vector_db.search(query, top_k)
+    print(metadata)
 
-    return {"status": "query endpoint", "text": query, "top_k": top_k, "distances": distances,}
+    return {"status": "query endpoint", "text": query, "top_k": top_k, "metadata": metadata}
+
+@router.get("/total_embedding")
+async def total_embedding():
+    total =  vector_db.total_embedding()
+    return {"total_embedding": total}
 
 @router.get('/llm')
 def llm():
