@@ -1,11 +1,22 @@
-from pydantic import BaseModel
-from fastapi import UploadFile, File, HTTPException
+from pydantic import BaseModel, Field
+from typing import Optional
 
-
-# class UploadFileSchema(BaseModel):
-#     """Pydantic model for CSV file upload requests"""
-#     required_header: str 
 
 class QuerySchema(BaseModel):
     query: str
-    top_k: int = 2
+    top_k: Optional[int] = Field(default=10)
+
+class QueryResponseSchema(BaseModel):
+    query: str
+    top_k: int
+    metadata: list[dict]
+    distances: list[float]
+
+class TotalEmbeddingSchema(BaseModel):
+    total_embedding: int
+
+class UploadResponseSchema(BaseModel):
+    total_reviews: int
+    file_size: int
+    
+    
