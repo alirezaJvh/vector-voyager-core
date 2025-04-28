@@ -1,29 +1,21 @@
 import redis.asyncio as redis
-from .config import REDIS_PORT
 
-class RedisClient:
-    def __init__(self):
-        self._client = None
+from common.config import get_settings
 
-    async def init_client(self):
-        if not self._client:
-            try:
-                self._client = await redis.from_url(
-                    f"redis://redis:{REDIS_PORT}",
-                    decode_responses=True,
-                )
-            except redis.Redis.RedisError as e:
-                # TODO: app logger 
-                # app_logger.error(f"Error connecting to Redis: {e}")
-                print('### error')
-                raise e
+settings = get_settings()
 
-    async def get_client(self) -> redis.Redis:
-        if not self._client:
-            await self.init_client()
-        return self._client
-    
-        
+redis_client: redis.Redis = None
 
+
+async def get_client() -> redis.Redis:
+    if not redis_client:
+        try:
+            return await redis.from_url(
+                f"redis://redis:{settings.REDIS_PORT}/0",
+                decode_responses=True,
+            )
+        except redis.Redis.RedisError as e:
+            raise e
+    return redis_client
 
     

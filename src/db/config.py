@@ -1,5 +1,5 @@
 from decouple import config as decouple_config
-
+# TODO: pyadantic setting
 # DATABASE_NAME = decouple_config('DATABASE_NAME', default="")
 # REDIS_URL = decouple_config('REDIS_URL', default="")
 REDIS_PORT = decouple_config('REDIS_PORT', default="")
