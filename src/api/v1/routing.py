@@ -4,6 +4,7 @@ from openai import OpenAI
 from src.db.vector_db import VectorDBClient
 from src.utils.chat_reply import chat_reply
 from src.utils.csv_uploader import save_csv_as_vector
+from src.exceptions.handler import CSVValidatorExceptionError
 
 from .schemas import (
     LLMQuerySchema,
@@ -38,7 +39,9 @@ async def upload_csv(
             product_id_header=product_id_header,
             vector_db=vector_db,
         )
-    except:
+    except Exception as e:
+        if isinstance(e, CSVValidatorExceptionError):
+            raise HTTPException(status_code=400, detail=str(e.message))
         raise HTTPException(status_code=500, detail="internal server error")
 
     return UploadResponseSchema(total_reviews=total_processed, file_size=file_size)
