@@ -8,6 +8,7 @@ class CSVFileValidator:
     async def validate_csv_file(file: UploadFile, required_header: list[str] = []):
  
         if not file.filename.endswith('.csv'):
+            # TODO: exception error CSVValidatorExceptionError
             raise HTTPException(status_code=400, detail="Invalid file type. Only CSV files are allowed.")
     
         contents = await file.read()
