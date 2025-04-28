@@ -1,6 +1,6 @@
 import redis.asyncio as redis
 
-from common.config import get_settings
+from src.common.config import get_settings
 
 settings = get_settings()
 

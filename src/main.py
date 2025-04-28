@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
-from api.v1 import router as v1_router
+from src.api.v1 import router as v1_router
 
 app = FastAPI()
 app.include_router(v1_router, prefix="/api/v1")

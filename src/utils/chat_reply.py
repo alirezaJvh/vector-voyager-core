@@ -1,7 +1,7 @@
 from openai import OpenAI
 
-from common.config import get_settings
-from db.vector_db import VectorDBClient
+from src.common.config import get_settings
+from src.db.vector_db import VectorDBClient
 
 settings = get_settings()
 
@@ -13,28 +13,31 @@ async def chat_reply(query: str, top_k: int, vector_db: VectorDBClient):
     for idx, doc in enumerate(metadata):
         if doc:
             doc_content = "\t ".join([f"{key}: {value}" for key, value in doc.items()])
-            context += f"Document {idx+1}:\n{doc_content}\n\n"
+            context += f"Review {idx+1}:\n{doc_content}\n\n"
 
     chat_history = ""
     system_prompt = """
-    You are an expert customer insights assistant. Your role is to analyze customer feedback provided in the context and generate clear, concise, and insightful answers to user questions. 
+    You are a highly skilled customer insights assistant. Your primary role is to help users explore and analyze customer feedback data.
 
-    Guidelines:
-    - Use only the information provided in the **Context** to answer the question.
-    - If the context does not contain enough information to answer, respond with: *"The provided context does not contain enough information to answer this question."*
-    - Summarize relevant feedback items where appropriate to provide a well-rounded answer.
-    - Maintain a professional, informative tone.
+    Behavior guidelines:
+    - Base your answers solely on the provided **Context** (which contains retrieved customer feedback records).
+    - Do not use outside knowledge or make assumptions beyond the provided information.
+    - If the **Context** does not contain any information, clearly respond with: "The provided context does not contain enough information to answer this question."
+    - Provide clear, concise, and insightful responses.
+    - Summarize key points from the feedback records when helpful, focusing on trends, sentiments, or recurring issues.
+    - Maintain a professional, objective, and informative tone at all times.
+    """
+
+    user_prompt = f"""
+    You will answer the following question based strictly on the provided **Context** containing customer feedback records.
 
     <Context>
-    {{context}}
+    {context}
     </Context>
 
-    <Chat_History>
-    {{chat_history}}
-    </Chat_History>
 
     <Question>
-    {{query}}
+    {query}
     </Question>
 
     <Answer>
@@ -50,7 +53,7 @@ async def chat_reply(query: str, top_k: int, vector_db: VectorDBClient):
             {
                 "role": "user",
                 "content": user_prompt.format(
-                    context=context, chat_history=chat_history, query=query
+                    context=context, query=query
                 ),
             },
         ],

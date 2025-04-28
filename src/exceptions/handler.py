@@ -1,6 +1,6 @@
 from typing import Optional
 
-from exceptions.enums import ErrorEnum
+from src.exceptions.enums import ErrorEnum
 
 
 class CSVValidatorExceptionError(Exception):

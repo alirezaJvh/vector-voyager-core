@@ -1,9 +1,9 @@
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from openai import OpenAI
 
-from db.vector_db import VectorDBClient
-from utils.chat_reply import chat_reply
-from utils.csv_uploader import save_csv_as_vector
+from src.db.vector_db import VectorDBClient
+from src.utils.chat_reply import chat_reply
+from src.utils.csv_uploader import save_csv_as_vector
 
 from .schemas import (
     LLMQuerySchema,

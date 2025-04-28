@@ -3,8 +3,8 @@ from io import StringIO
 
 from fastapi import UploadFile
 
-from db.vector_db import VectorDBClient
-from exceptions.handler import CSVValidatorExceptionError, ErrorEnum
+from src.db.vector_db import VectorDBClient
+from src.exceptions.handler import CSVValidatorExceptionError, ErrorEnum
 
 
 async def _validate_csv_file(file, required_header: list[str] = []):

@@ -5,8 +5,8 @@ import faiss
 import numpy as np
 from openai import OpenAI
 
-from common.config import get_settings
-from db.redis import get_client as get_redis_client
+from src.common.config import get_settings
+from src.db.redis import get_client as get_redis_client
 
 settings = get_settings()
 
