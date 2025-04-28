@@ -2,6 +2,7 @@ from fastapi import APIRouter, UploadFile, File, HTTPException, Form
 from openai import OpenAI
 from db.vector_db import VectorDBClient
 from utils.csv_uploader import save_csv_as_vector
+from utils.chat_reply import chat_reply
 from .schemas import (
     RetrieveQuerySchema, 
     RetrieveResponseSchema, 
@@ -63,55 +64,9 @@ async def total_embedding():
 # TODO:  
 @router.post('/llm', response_model=LLMResponseSchema)
 async def llm(payload: LLMQuerySchema):
-    query_payload = RetrieveQuerySchema(query=payload.query, top_k=payload.top_k)
-    # TODO: use service and do not use retrieve api
-    result = await retrieve(query_payload)
-    print(result.metadata)
-    print(result.distances)
-
-    context = ""
-    for idx, doc in enumerate(result.metadata):
-        print(doc)
-        if doc :
-            doc_content = "\t ".join([f"{key}: {value}" for key, value in doc.items()])
-            context += f"Document {idx+1}:\n{doc_content}\n\n"
-
-    # TODO: use better prompt
-    prompt = f"""
-    Answer the following question based on the provided context.
-    
-    Context:
-    {context}
-    
-    Question: {payload.query}
-    
-    Answer:
-    """
-    # TODO: move it to prodiver
-    openai_client = OpenAI()
     try:
-        # TODO: use enum
-        # TODO: history
-        response = openai_client.chat.completions.create(
-            model="gpt-4o-mini-2024-07-18",
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant that answers questions based on the provided context."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.3,
-            max_tokens=500
-        )
-        print(response.choices)
-        answer = response.choices[0].message.content
-
-        return LLMResponseSchema(
-            query=payload.query,
-            response=answer,
-            sources=result.metadata
-        )
-
+        answer, metadata = await chat_reply(query=payload.query, top_k=payload.top_k, vector_db=vector_db)
     except Exception as e:
-        print(e)
         raise HTTPException(status_code=500, detail=f"Error calling LLM: {str(e)}")
 
-
+    return LLMResponseSchema(query=payload.query, response=answer, sources=metadata)
