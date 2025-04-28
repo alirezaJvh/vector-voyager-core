@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     OPENAI_EMBEDDING_MODEL: str = "text-embedding-3-small"
     OPENAI_MAX_TOKENS: int = 500
     OPENAI_TEMPERATURE: float = 0.3
+    ALLOWED_ORIGINS: str = "http://localhost:3000"
 
     model_config = SettingsConfigDict(
         env_file=".env",
