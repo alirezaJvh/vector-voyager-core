@@ -8,9 +8,8 @@ services:
       - .env
     ports:
       - '8000:8000'
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
     volumes:
-      - ./src:/code:rw
+      - ./src:/core/src:rw
     depends_on:
       - redis
     develop:

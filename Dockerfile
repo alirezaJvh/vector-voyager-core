@@ -1,25 +1,8 @@
-# TODO: add builder 
-# 1 - Download & Install Python 3
-FROM python:3.13.3-slim-bullseye
 
-# Setup linux os packages
-# 2 - Create Virtual Environment
-# 3 - Install Python Packages - `pip install <package-name>`
-# 4 - FastAPI Hello World
-
-
-# Create a virtual environment
-RUN python -m venv /opt/venv
-
-# Set the virtual environment as the current location
-ENV PATH=/opt/venv/bin:$PATH
-
-# Upgrade pip
-RUN pip install --upgrade pip
-
-# Set Python-related environment variables
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+FROM python:3.12-slim-bullseye AS builder
+WORKDIR /core
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
 
 # Install os dependencies for our mini vm
 RUN apt-get update && apt-get install -y \
@@ -33,32 +16,22 @@ RUN apt-get update && apt-get install -y \
     gcc \
     && rm -rf /var/lib/apt/lists/*
 
-# Create the mini vm's code directory
-RUN mkdir -p /code
-
-# Set the working directory to that same code directory
-WORKDIR /code
-
-# Copy the requirements file into the container
-COPY requirements.txt /tmp/requirements.txt
-
-# copy the project code into the container's working directory
-COPY ./src /code
-
-# Install the Python project requirements
-RUN pip install -r /tmp/requirements.txt
+COPY requirements.txt /core/requirements.txt
+RUN pip wheel --no-cache-dir --no-deps --wheel-dir /core/wheels -r /core/requirements.txt
 
 
-# make the bash script executable
-COPY ./boot/docker-run.sh /opt/run.sh
-RUN chmod +x /opt/run.sh
 
-# Clean up apt cache to reduce image size
-RUN apt-get remove --purge -y \
-    && apt-get autoremove -y \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+FROM python:3.12-slim-bullseye
+WORKDIR /core
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
 
+COPY /src /core/src
+
+RUN apt update && apt install vim -y && pip install --upgrade pip setuptools wheel
+
+COPY --from=builder /core/wheels /wheels
+RUN pip install --no-cache /wheels/* && rm -r /wheels
 # Run the FastAPI project via the runtime script
 # when the container starts
-CMD ["/opt/run.sh"]
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
