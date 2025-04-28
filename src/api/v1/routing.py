@@ -42,7 +42,8 @@ async def upload_csv(
     except Exception as e:
         if isinstance(e, CSVValidatorExceptionError):
             raise HTTPException(status_code=400, detail=str(e.message))
-        raise HTTPException(status_code=500, detail="internal server error")
+        print(e)
+        raise HTTPException(status_code=500, detail=str(e))
 
     return UploadResponseSchema(total_reviews=total_processed, file_size=file_size)
 
