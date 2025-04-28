@@ -15,11 +15,8 @@ from .schemas import (
 vector_db = VectorDBClient()
 router = APIRouter()
 
-# TODO: make better name for reviw_header and prodocut_id_header
-# upload csv file to save it in vector database
 @router.post("/upload", response_model=UploadResponseSchema, )
 async def upload_csv(file: UploadFile = File(...), review_header: str = Form(...), product_id_header: str = Form(...)):
-
     if not review_header:
         raise HTTPException(status_code=400, detail="review_header is required")
 
@@ -41,7 +38,6 @@ async def upload_csv(file: UploadFile = File(...), review_header: str = Form(...
 
 @router.post("/retrieve-data", response_model=RetrieveResponseSchema)
 async def retrieve(payload: RetrieveQuerySchema):
-
     try:
         distances, _, metadata = await vector_db.search(payload.query, payload.top_k)
     except Exception as e:
@@ -61,7 +57,6 @@ async def total_embedding():
     return TotalEmbeddingSchema(total_embedding=total)
 
 
-# TODO:  
 @router.post('/llm', response_model=LLMResponseSchema)
 async def llm(payload: LLMQuerySchema):
     try:

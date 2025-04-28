@@ -1,13 +1,12 @@
-from src.common.config import get_settings
+from common.config import get_settings
 from openai import OpenAI
 
-from src.db.vector_db import VectorDBClient
+from db.vector_db import VectorDBClient
 
 settings = get_settings()
 
  
-async def chat_reply(query: str, top_k: int):
-    vector_db = VectorDBClient()
+async def chat_reply(query: str, top_k: int, vector_db: VectorDBClient):
     _, _, metadata = await vector_db.search(query, top_k)
 
     context = ""

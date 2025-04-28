@@ -3,9 +3,7 @@ uvicorn
 gunicorn
 pydantic
 python-multipart
-python-decouple
-# chromadb
+pydantic_settings
 faiss-cpu
 redis
 openai
-# numpy

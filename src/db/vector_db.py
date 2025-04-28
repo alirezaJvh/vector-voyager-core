@@ -1,25 +1,21 @@
 import faiss
 from openai import OpenAI
-from .config import OPENAI_API_KEY
 import numpy as np
 import json
 import asyncio
 from db.redis import get_client as get_redis_client
+from common.config import get_settings
+
+settings = get_settings()
 
 
 
 class VectorDBClient:
+
     def __init__(self, embedding_dim: int = 1536, index_file: str = "faiss_index"):
-        # TODO: pydantic setting
-        if OPENAI_API_KEY == "":
-            # TODO: value error
-            raise NotImplementedError("OpenAI API key is not set")
-    
         self._client = None
         self._embedding_dim = embedding_dim
-        # TODO: 
         self._openai_client = OpenAI()
-        # self._redis_client = RedisClient()
         self._index_file = index_file
         self._init_index_counter()
 
@@ -66,7 +62,6 @@ class VectorDBClient:
         await redis.hset(key, mapping=string_metadata)
                 
     def get_client(self):
-        print('@@@@ get client @@@')
         if not self._client:
             print(self._client)
             self.init_client()
