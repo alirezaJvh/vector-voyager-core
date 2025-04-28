@@ -32,6 +32,10 @@ RUN apt update && apt install vim -y && pip install --upgrade pip setuptools whe
 
 COPY --from=builder /core/wheels /wheels
 RUN pip install --no-cache /wheels/* && rm -r /wheels
+
+COPY ./boot/docker-run.sh /opt/run.sh
+RUN chmod +x /opt/run.sh
+
 # Run the FastAPI project via the runtime script
 # when the container starts
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["/opt/run.sh"]
