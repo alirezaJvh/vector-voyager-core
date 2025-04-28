@@ -3,8 +3,8 @@ import csv
 from io import StringIO
 from fastapi import UploadFile
 
-from src.db.vector_db import VectorDBClient
-from src.exceptions import CSVValidatorExceptionError, ErrorEnum
+from db.vector_db import VectorDBClient
+from exceptions.handler import CSVValidatorExceptionError, ErrorEnum
 
 
 async def _validate_csv_file(file, required_header: list[str] = []):
@@ -61,6 +61,7 @@ async def save_csv_as_vector(
     file: UploadFile,
     review_header: str,
     product_id_header: str,
+    vector_db: VectorDBClient
 ):
     """
     Save the CSV file as vector embeddings.
@@ -79,7 +80,6 @@ async def save_csv_as_vector(
         CSVValidatorExceptionError: If the required header is not found.
         CSVValidatorExceptionError: If the file is not a valid CSV format.
     """
-    vector_db = VectorDBClient()
     data, file_size = await _validate_csv_file(
         file=file, required_header=[review_header, product_id_header]
     )

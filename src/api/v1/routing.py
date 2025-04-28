@@ -1,85 +1,117 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException
-from common.validation import CSVFileValidator
+from fastapi import APIRouter, UploadFile, File, HTTPException, Form
+from openai import OpenAI
 from db.vector_db import VectorDBClient
+from utils.csv_uploader import save_csv_as_vector
 from .schemas import (
-    QuerySchema, 
-    QueryResponseSchema, 
+    RetrieveQuerySchema, 
+    RetrieveResponseSchema, 
     UploadResponseSchema,
-    TotalEmbeddingSchema
+    TotalEmbeddingSchema,
+    LLMQuerySchema,
+    LLMResponseSchema
 )
 
 vector_db = VectorDBClient()
 router = APIRouter()
 
+# TODO: make better name for reviw_header and prodocut_id_header
 # upload csv file to save it in vector database
-@router.post("/upload", response_model=UploadResponseSchema)
-async def upload_csv(file: UploadFile = File(...), review_header: str = None, product_id_header: str = None):
+@router.post("/upload", response_model=UploadResponseSchema, )
+async def upload_csv(file: UploadFile = File(...), review_header: str = Form(...), product_id_header: str = Form(...)):
+
     if not review_header:
         raise HTTPException(status_code=400, detail="review_header is required")
-    
+
     if not product_id_header:
         raise HTTPException(status_code=400, detail="product_id_header is required")
-    # Validate the CSV file
-    data, file_size = await CSVFileValidator.validate_csv_file(
-        file=file,
-        required_header=[review_header, product_id_header]
-    )
 
-    # remove all existing embeddings
-    await vector_db.remove_all()
+    try:
+        total_processed, file_size = await save_csv_as_vector(
+            file=file,
+            review_header=review_header,
+            product_id_header=product_id_header,
+            vector_db=vector_db
+        )
+    except:
+        raise HTTPException(status_code=500, detail="internal server error")
 
-    reviews = []
-    product_ids = []
-    for row in data:
-        review = row.get(review_header, "").strip()
-        product_id = row.get(product_id_header, "").strip()
-        if review and product_id:
-            reviews.append(review)
-            product_ids.append(product_id)
-
-    batch_size = 300
-    total_processed = 0
-
-    for idx in range(0, len(reviews), batch_size):
-        batch_reviews = reviews[idx:idx + batch_size]
-        batch_product_ids = product_ids[idx:idx + batch_size]
-
-        # add embedding to vector database
-        indices = await vector_db.add_embedding_batch(batch_reviews, batch_product_ids)
-        total_processed += len(indices)
-
-    return UploadResponseSchema(
-        total_reviews=total_processed,
-        file_size=file_size
-    )
+    return UploadResponseSchema(total_reviews=total_processed, file_size=file_size)
 
 
-@router.post("/query", response_model=QueryResponseSchema)
-async def query(payload: QuerySchema):
+@router.post("/retrieve-data", response_model=RetrieveResponseSchema)
+async def retrieve(payload: RetrieveQuerySchema):
 
-    query, top_k = payload.query, payload.top_k
-    if not query:
-        raise HTTPException(status_code=400, detail="Query text is required")
+    try:
+        distances, _, metadata = await vector_db.search(payload.query, payload.top_k)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error searching for query: {str(e)}")
 
-    distances, _, metadata = await vector_db.search(query, top_k)
-    print(metadata)
-
-    return QueryResponseSchema(
-        query=query,
-        top_k=top_k,
+    return RetrieveResponseSchema(
+        query=payload.query,
+        top_k=payload.top_k,
         metadata=metadata,
-        distances=distances.tolist()
+        distances=distances.flatten().tolist()
     )
 
 
-@router.get("/total_embedding", response_model=TotalEmbeddingSchema)
+@router.get("/total-embedding", response_model=TotalEmbeddingSchema)
 async def total_embedding():
     total =  vector_db.total_embedding()
     return TotalEmbeddingSchema(total_embedding=total)
 
 
-@router.get('/llm')
-def llm():
-    return {"status": "llm endpoint"}
+# TODO:  
+@router.post('/llm', response_model=LLMResponseSchema)
+async def llm(payload: LLMQuerySchema):
+    query_payload = RetrieveQuerySchema(query=payload.query, top_k=payload.top_k)
+    # TODO: use service and do not use retrieve api
+    result = await retrieve(query_payload)
+    print(result.metadata)
+    print(result.distances)
+
+    context = ""
+    for idx, doc in enumerate(result.metadata):
+        print(doc)
+        if doc :
+            doc_content = "\t ".join([f"{key}: {value}" for key, value in doc.items()])
+            context += f"Document {idx+1}:\n{doc_content}\n\n"
+
+    # TODO: use better prompt
+    prompt = f"""
+    Answer the following question based on the provided context.
+    
+    Context:
+    {context}
+    
+    Question: {payload.query}
+    
+    Answer:
+    """
+    # TODO: move it to prodiver
+    openai_client = OpenAI()
+    try:
+        # TODO: use enum
+        # TODO: history
+        response = openai_client.chat.completions.create(
+            model="gpt-4o-mini-2024-07-18",
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant that answers questions based on the provided context."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.3,
+            max_tokens=500
+        )
+        print(response.choices)
+        answer = response.choices[0].message.content
+
+        return LLMResponseSchema(
+            query=payload.query,
+            response=answer,
+            sources=result.metadata
+        )
+
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500, detail=f"Error calling LLM: {str(e)}")
 
 
