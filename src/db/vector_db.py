@@ -63,9 +63,7 @@ class VectorDBClient:
                 
     def get_client(self):
         if not self._client:
-            print(self._client)
             self.init_client()
-        print(self._client)
         return self._client
 
     def get_embedding(self, text: str | list[str]) -> list[float]:

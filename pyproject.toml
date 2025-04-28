@@ -1,0 +1,50 @@
+[tool.flake8]
+max-line-length = 120
+exclude = [
+  "migrations",
+  "__pycache__",
+  "manage.py",
+  "settings.py",
+  "env",
+  ".env",
+  "./env",
+  "env/",
+  ".env/",
+  "venv",
+  ".venv",
+  "./.venv",
+  "venv/",
+  ".venv/",
+  "__init__.py",
+  "requirements.txt",
+  "versions"
+]
+
+[tool.black]
+line-length = 100
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | \.env
+  | _build
+  | buck-out
+  | build
+  | dist
+  | migrations
+)/
+'''
+
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+line_length = 100
+skip = [".gitignore", ".dockerignore", ".venv", "requirement.txt"]

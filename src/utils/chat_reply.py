@@ -11,7 +11,6 @@ async def chat_reply(query: str, top_k: int, vector_db: VectorDBClient):
 
     context = ""
     for idx, doc in enumerate(metadata):
-        print(doc)
         if doc:
             doc_content = "\t ".join([f"{key}: {value}" for key, value in doc.items()])
             context += f"Document {idx+1}:\n{doc_content}\n\n"

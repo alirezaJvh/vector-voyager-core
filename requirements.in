@@ -1,0 +1,13 @@
+fastapi==0.115.12
+uvicorn
+gunicorn
+pydantic
+python-multipart
+pydantic_settings
+faiss-cpu
+redis
+openai
+flake8
+black
+isort
+pre-commit
