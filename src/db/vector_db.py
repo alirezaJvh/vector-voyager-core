@@ -1,13 +1,14 @@
-import faiss
-from openai import OpenAI
-import numpy as np
-import json
 import asyncio
-from db.redis import get_client as get_redis_client
+import json
+
+import faiss
+import numpy as np
+from openai import OpenAI
+
 from common.config import get_settings
+from db.redis import get_client as get_redis_client
 
 settings = get_settings()
-
 
 
 class VectorDBClient:
@@ -28,7 +29,6 @@ class VectorDBClient:
         if not self._client:
             self._client = faiss.IndexFlatIP(self._embedding_dim)
 
-
     async def _get_next_index(self) -> int:
         """Get the next available index position"""
         redis = await get_redis_client()
@@ -44,7 +44,7 @@ class VectorDBClient:
 
         if not metadata:
             return None
-        
+
         for k, v in metadata.items():
             try:
                 metadata[k] = json.loads(v)
@@ -57,21 +57,19 @@ class VectorDBClient:
         redis = await get_redis_client()
         key = f"{self._metadata_prefix}{index_position}"
 
-        string_metadata = {k: json.dumps(v) if not isinstance(v, str) else v
-                            for k, v in metadata.items()}
+        string_metadata = {
+            k: json.dumps(v) if not isinstance(v, str) else v for k, v in metadata.items()
+        }
         await redis.hset(key, mapping=string_metadata)
-                
+
     def get_client(self):
         if not self._client:
             self.init_client()
         return self._client
 
     def get_embedding(self, text: str | list[str]) -> list[float]:
-        response = self._openai_client.embeddings.create(
-            input=text,
-            model="text-embedding-3-small"
-        )
-        embeddings = np.array([e.embedding for e in response.data]).astype('float32')
+        response = self._openai_client.embeddings.create(input=text, model="text-embedding-3-small")
+        embeddings = np.array([e.embedding for e in response.data]).astype("float32")
         if isinstance(text, list):
             embeddings = np.vstack(embeddings)
         return embeddings
@@ -86,10 +84,7 @@ class VectorDBClient:
 
         index_position = await self._get_next_index()
         # store metadata in redis
-        await self._save_metadata(index_position, {
-            "product_id": product_id,
-            "review_text": text
-        })
+        await self._save_metadata(index_position, {"product_id": product_id, "review_text": text})
 
         return index_position
 
@@ -111,33 +106,32 @@ class VectorDBClient:
         for index, (text, product_id) in enumerate(zip(texts, product_ids)):
             index_position = start_index + index
             # TODO: make it better - use redis pipeline
-            await self._save_metadata(index_position, {
-                'product_id': product_id,
-                'review_text': text
-            })
+            await self._save_metadata(
+                index_position, {"product_id": product_id, "review_text": text}
+            )
             index_positions.append(index_position)
 
         redis = await get_redis_client()
         # TODO: remove it if using ntotal of faiss
         await redis.incrby(self._index_counter_key, len(texts))
-        
+
         return index_positions
 
     async def search(self, text: str, top_k: int = 2):
         query_embedding = self.get_embedding(text)
-        query_embedding = query_embedding.reshape(1, -1).astype('float32')
+        query_embedding = query_embedding.reshape(1, -1).astype("float32")
         # TODO: faiss search
         index = self.get_client()
         distances, indices = index.search(query_embedding, k=top_k)
         metadata = []
-    
+
         # TODO: use asyncio.gather or redis pipline
         for idx in indices[0]:
             if idx != -1:
                 metadata.append(await self._get_metadata(idx))
-   
+
         return distances, indices, metadata
-    
+
     def total_embedding(self) -> int:
         index = self.get_client()
         return index.ntotal
@@ -146,22 +140,14 @@ class VectorDBClient:
         index = self.get_client()
         index.reset()
         redis = await get_redis_client()
-        
+
         # Delete all metadata keys
         # TODO: do not us remove _index_counter_key in redis
         keys, _ = await asyncio.gather(
-            redis.keys(f"{self._metadata_prefix}*"),
-            redis.delete(self._index_counter_key)
+            redis.keys(f"{self._metadata_prefix}*"), redis.delete(self._index_counter_key)
         )
-        
+
         if keys:
             await redis.delete(*keys)
         # Reset index counter
         self._init_index_counter()
-        
-        
-
-        
-
-        
-    

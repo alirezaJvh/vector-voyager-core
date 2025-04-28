@@ -1,7 +1,8 @@
 from fastapi import FastAPI
-from api.v1 import router as v1_router
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
+
+from api.v1 import router as v1_router
 
 app = FastAPI()
 app.include_router(v1_router, prefix="/api/v1")
@@ -30,7 +31,6 @@ app.add_middleware(
         "x-secret",
     ],
 )
-
 
 
 @app.get("/healthz")

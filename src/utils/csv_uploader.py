@@ -1,6 +1,6 @@
-
 import csv
 from io import StringIO
+
 from fastapi import UploadFile
 
 from db.vector_db import VectorDBClient
@@ -10,14 +10,14 @@ from exceptions.handler import CSVValidatorExceptionError, ErrorEnum
 async def _validate_csv_file(file, required_header: list[str] = []):
     """
     Validate the CSV file.
-    
+
     Args:
         file: The uploaded file.
         required_header: List of required headers.
-    
+
     Returns:
         tuple: A tuple containing the list of data and the file size.
-    
+
     Raises:
         CSVValidatorExceptionError: If the file is not a CSV file.
         CSVValidatorExceptionError: If the file is empty.
@@ -58,22 +58,19 @@ async def _validate_csv_file(file, required_header: list[str] = []):
 
 
 async def save_csv_as_vector(
-    file: UploadFile,
-    review_header: str,
-    product_id_header: str,
-    vector_db: VectorDBClient
+    file: UploadFile, review_header: str, product_id_header: str, vector_db: VectorDBClient
 ):
     """
     Save the CSV file as vector embeddings.
-    
+
     Args:
         file: The uploaded file.
         review_header: The header for the review text.
         product_id_header: The header for the product ID.
-    
+
     Returns:
         tuple: A tuple containing the total number of processed reviews and the file size.
-    
+
     Raises:
         CSVValidatorExceptionError: If the file is not a CSV file.
         CSVValidatorExceptionError: If the file is empty.

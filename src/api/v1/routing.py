@@ -1,22 +1,30 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, Form
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from openai import OpenAI
+
 from db.vector_db import VectorDBClient
-from utils.csv_uploader import save_csv_as_vector
 from utils.chat_reply import chat_reply
+from utils.csv_uploader import save_csv_as_vector
+
 from .schemas import (
-    RetrieveQuerySchema, 
-    RetrieveResponseSchema, 
-    UploadResponseSchema,
-    TotalEmbeddingSchema,
     LLMQuerySchema,
-    LLMResponseSchema
+    LLMResponseSchema,
+    RetrieveQuerySchema,
+    RetrieveResponseSchema,
+    TotalEmbeddingSchema,
+    UploadResponseSchema,
 )
 
 vector_db = VectorDBClient()
 router = APIRouter()
 
-@router.post("/upload", response_model=UploadResponseSchema, )
-async def upload_csv(file: UploadFile = File(...), review_header: str = Form(...), product_id_header: str = Form(...)):
+
+@router.post(
+    "/upload",
+    response_model=UploadResponseSchema,
+)
+async def upload_csv(
+    file: UploadFile = File(...), review_header: str = Form(...), product_id_header: str = Form(...)
+):
     if not review_header:
         raise HTTPException(status_code=400, detail="review_header is required")
 
@@ -28,7 +36,7 @@ async def upload_csv(file: UploadFile = File(...), review_header: str = Form(...
             file=file,
             review_header=review_header,
             product_id_header=product_id_header,
-            vector_db=vector_db
+            vector_db=vector_db,
         )
     except:
         raise HTTPException(status_code=500, detail="internal server error")
@@ -47,20 +55,22 @@ async def retrieve(payload: RetrieveQuerySchema):
         query=payload.query,
         top_k=payload.top_k,
         metadata=metadata,
-        distances=distances.flatten().tolist()
+        distances=distances.flatten().tolist(),
     )
 
 
 @router.get("/total-embedding", response_model=TotalEmbeddingSchema)
 async def total_embedding():
-    total =  vector_db.total_embedding()
+    total = vector_db.total_embedding()
     return TotalEmbeddingSchema(total_embedding=total)
 
 
-@router.post('/llm', response_model=LLMResponseSchema)
+@router.post("/llm", response_model=LLMResponseSchema)
 async def llm(payload: LLMQuerySchema):
     try:
-        answer, metadata = await chat_reply(query=payload.query, top_k=payload.top_k, vector_db=vector_db)
+        answer, metadata = await chat_reply(
+            query=payload.query, top_k=payload.top_k, vector_db=vector_db
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error calling LLM: {str(e)}")
 

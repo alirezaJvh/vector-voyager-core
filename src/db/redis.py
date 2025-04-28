@@ -17,5 +17,3 @@ async def get_client() -> redis.Redis:
         except redis.Redis.RedisError as e:
             raise e
     return redis_client
-
-    
