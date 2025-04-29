@@ -2,8 +2,8 @@ from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from openai import OpenAI
 
 from src.db.vector_db import VectorDBClient
-from src.utils.chat_reply import chat_reply
-from src.utils.csv_uploader import save_csv_as_vector
+from src.services.chat_reply import chat_reply
+from src.services.csv_uploader import save_csv_as_vector
 from src.exceptions.handler import CSVValidatorExceptionError
 
 from .schemas import (
@@ -42,7 +42,6 @@ async def upload_csv(
     except Exception as e:
         if isinstance(e, CSVValidatorExceptionError):
             raise HTTPException(status_code=400, detail=str(e.message))
-        print(e)
         raise HTTPException(status_code=500, detail=str(e))
 
     return UploadResponseSchema(total_reviews=total_processed, file_size=file_size)
