@@ -11,7 +11,7 @@ async def get_client() -> redis.Redis:
     if not redis_client:
         try:
             return await redis.from_url(
-                f"redis://redis:{settings.REDIS_PORT}/0",
+                settings.redis_connection_url,
                 decode_responses=True,
             )
         except redis.Redis.RedisError as e:
