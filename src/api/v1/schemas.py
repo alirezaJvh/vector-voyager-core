@@ -2,9 +2,6 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-# from fastapi import UploadFile
-
-
 class RetrieveQuerySchema(BaseModel):
     query: str
     top_k: Optional[int] = Field(default=10)
@@ -13,7 +10,6 @@ class RetrieveQuerySchema(BaseModel):
 class UploadCSVSchema(BaseModel):
     review_header: str
     product_id_header: str
-    # file: UploadFile
 
 
 class RetrieveResponseSchema(BaseModel):

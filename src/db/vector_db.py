@@ -36,6 +36,15 @@ class VectorDBClient:
         # Return the previous value (0-indexed)
         return counter - 1
 
+    async def _get_metadata_batch(self, index_positions: list[int]) -> list[dict]:
+        redis = await get_redis_client()
+        keys = [f"{self._metadata_prefix}{index}" for index in index_positions]
+        pipe = redis.pipeline()
+        for key in keys:
+            pipe.hgetall(key)
+        results = await pipe.execute()
+        return results
+
     async def _get_metadata(self, index_position: int) -> dict:
         redis = await get_redis_client()
         key = f"{self._metadata_prefix}{index_position}"
@@ -121,13 +130,10 @@ class VectorDBClient:
         query_embedding = self.get_embedding(text)
         query_embedding = query_embedding.reshape(1, -1).astype("float32")
         index = self.get_client()
+        # search for the most similar embeddings
         distances, indices = index.search(query_embedding, k=top_k)
-        metadata = []
-
-        # TODO: use asyncio.gather or redis pipline
-        for idx in indices[0]:
-            if idx != -1:
-                metadata.append(await self._get_metadata(idx))
+        # get metadata for the retrieved embeddings
+        metadata = await self._get_metadata_batch(indices[0])
 
         return distances, indices, metadata
 
