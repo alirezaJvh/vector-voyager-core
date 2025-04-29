@@ -80,7 +80,6 @@ async def save_csv_as_vector(
     data, file_size = await _validate_csv_file(
         file=file, required_header=[review_header, product_id_header]
     )
-
     # remove all existing embeddings
     await vector_db.remove_all()
 
