@@ -13,7 +13,7 @@ async def chat_reply(query: str, top_k: int, vector_db: VectorDBClient):
     for idx, doc in enumerate(metadata):
         if doc:
             doc_content = "\t ".join([f"{key}: {value}" for key, value in doc.items()])
-            context += f"Review {idx+1}:\n{doc_content}\n\n"
+            context += f" - ({idx+1}) nearest result for query: \n{doc_content}\n\n"
 
     chat_history = ""
     system_prompt = """
