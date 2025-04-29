@@ -62,6 +62,19 @@ class VectorDBClient:
 
         return metadata
 
+    async def _save_metadata_batch(self, index_positions: list[int], metadata: list[dict]):
+        redis = await get_redis_client()
+        pipe = redis.pipeline()
+
+        for index, metadata in zip(index_positions, metadata):
+            key = f"{self._metadata_prefix}{index}"
+            string_metadata = {
+                k: json.dumps(v) if not isinstance(v, str) else v for k, v in metadata.items()
+            }
+            pipe.hset(key, mapping=string_metadata)
+
+        await pipe.execute()
+
     async def _save_metadata(self, index_position: int, metadata: dict):
         redis = await get_redis_client()
         key = f"{self._metadata_prefix}{index_position}"
@@ -108,20 +121,20 @@ class VectorDBClient:
         index = self.get_client()
         index.add(embeddings)
 
-        # TODO: store metadata - read  total embedding from faiss
         start_index = await self._get_next_index()
         index_positions = []
-
+        metadata = []
+        # prepare metadata and index positions
         for index, (text, product_id) in enumerate(zip(texts, product_ids)):
-            index_position = start_index + index
-            # TODO: make it better - use redis pipeline
-            await self._save_metadata(
-                index_position, {"product_id": product_id, "review_text": text}
-            )
-            index_positions.append(index_position)
+            index_positions.append(start_index + index)
+            data = {"product_id": product_id, "review_text": text}
+            string_metadata = {k: json.dumps(v) if not isinstance(v, str) else v for k, v in data.items()}
+            metadata.append(string_metadata)
+        # save metadata in redis
+        await self._save_metadata_batch(index_positions, metadata)
 
         redis = await get_redis_client()
-        # TODO: remove it if using ntotal of faiss
+
         await redis.incrby(self._index_counter_key, len(texts))
 
         return index_positions
@@ -146,8 +159,6 @@ class VectorDBClient:
         index.reset()
         redis = await get_redis_client()
 
-        # Delete all metadata keys
-        # TODO: do not us remove _index_counter_key in redis
         keys, _ = await asyncio.gather(
             redis.keys(f"{self._metadata_prefix}*"), redis.delete(self._index_counter_key)
         )
